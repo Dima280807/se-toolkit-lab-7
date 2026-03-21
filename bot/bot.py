@@ -94,8 +94,9 @@ Test mode examples:
             print(response)
             sys.exit(0)
         except ValueError as e:
-            print(f"Error: {e}", file=sys.stderr)
-            sys.exit(1)
+            # Unknown command — return helpful message, not a crash
+            print(f"Unknown command. Available commands: /start, /help, /health, /labs, /scores")
+            sys.exit(0)
         except Exception as e:
             print(f"Unexpected error: {e}", file=sys.stderr)
             sys.exit(1)
