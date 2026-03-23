@@ -74,10 +74,14 @@ def handle_scores(lab: str | None = None) -> str:
         scores = client.get_scores(lab)
         if not scores:
             return f"No scores found for {lab}."
-        # Format scores as a list of task names with percentages
+        # Format scores as a list of task names with percentages and attempts
+        # API returns: [{"task": "...", "avg_score": 80.0, "attempts": 5}, ...]
         score_lines = []
-        for task_name, percentage in scores.items():
-            score_lines.append(f"- {task_name}: {percentage:.1f}%")
+        for item in scores:
+            task_name = item.get("task", "Unknown")
+            avg_score = item.get("avg_score", 0)
+            attempts = item.get("attempts", 0)
+            score_lines.append(f"- {task_name}: {avg_score:.1f}% ({attempts} attempts)")
         return f"Scores for {lab}:\n" + "\n".join(score_lines)
     except httpx.ConnectError as e:
         return f"Failed to fetch scores — connection refused ({e})"
