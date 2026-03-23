@@ -4,6 +4,7 @@
 Usage:
     uv run bot.py              # Run as Telegram bot
     uv run bot.py --test "/start"  # Test mode: print response to stdout
+    uv run bot.py --test "show labs"  # Natural language query via LLM
 """
 
 import argparse
@@ -19,15 +20,16 @@ from handlers import (
     handle_health,
     handle_labs,
     handle_scores,
+    handle_natural_language,
 )
 
 
 def parse_command(test_input: str) -> tuple[str, str | None]:
     """Parse a command string into command name and argument.
-    
+
     Args:
         test_input: The command string (e.g., "/start", "/scores lab-04")
-    
+
     Returns:
         Tuple of (command_name, argument_or_none)
     """
@@ -37,32 +39,49 @@ def parse_command(test_input: str) -> tuple[str, str | None]:
     return command, arg
 
 
-def run_test_mode(test_input: str) -> str:
-    """Run a command in test mode and return the response.
-    
+def is_command(test_input: str) -> bool:
+    """Check if the input is a slash command.
+
     Args:
-        test_input: The command to test (e.g., "/start", "/help")
-    
+        test_input: The input string to check.
+
     Returns:
-        The handler's text response
-    
-    Raises:
-        ValueError: If the command is not recognized
+        True if it's a slash command, False otherwise.
     """
-    command, arg = parse_command(test_input)
-    
-    handlers = {
-        "start": lambda: handle_start(),
-        "help": lambda: handle_help(),
-        "health": lambda: handle_health(),
-        "labs": lambda: handle_labs(),
-        "scores": lambda: handle_scores(arg),
-    }
-    
-    if command not in handlers:
-        raise ValueError(f"Unknown command: /{command}")
-    
-    return handlers[command]()
+    return test_input.strip().startswith("/")
+
+
+def run_test_mode(test_input: str) -> str:
+    """Run a command or query in test mode and return the response.
+
+    Args:
+        test_input: The command or query to test.
+
+    Returns:
+        The handler's text response.
+
+    Raises:
+        ValueError: If the command is not recognized.
+    """
+    # Check if it's a slash command or natural language
+    if is_command(test_input):
+        command, arg = parse_command(test_input)
+
+        handlers = {
+            "start": lambda: handle_start(),
+            "help": lambda: handle_help(),
+            "health": lambda: handle_health(),
+            "labs": lambda: handle_labs(),
+            "scores": lambda: handle_scores(arg),
+        }
+
+        if command not in handlers:
+            raise ValueError(f"Unknown command: /{command}")
+
+        return handlers[command]()
+    else:
+        # Natural language query — use LLM intent router
+        return handle_natural_language(test_input)
 
 
 def main() -> None:
@@ -72,23 +91,29 @@ def main() -> None:
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Test mode examples:
-  uv run bot.py --test "/start"
-  uv run bot.py --test "/help"
-  uv run bot.py --test "/health"
-  uv run bot.py --test "/labs"
-  uv run bot.py --test "/scores lab-04"
+  Slash commands:
+    uv run bot.py --test "/start"
+    uv run bot.py --test "/help"
+    uv run bot.py --test "/health"
+    uv run bot.py --test "/labs"
+    uv run bot.py --test "/scores lab-04"
+  
+  Natural language queries (requires LLM):
+    uv run bot.py --test "show me available labs"
+    uv run bot.py --test "is the backend working?"
+    uv run bot.py --test "scores for lab-04"
 """,
     )
     parser.add_argument(
         "--test",
         metavar="COMMAND",
-        help="Run a command in test mode (prints response to stdout)",
+        help="Run a command or query in test mode (prints response to stdout)",
     )
-    
+
     args = parser.parse_args()
-    
+
     if args.test:
-        # Test mode: run command and print response
+        # Test mode: run command/query and print response
         try:
             response = run_test_mode(args.test)
             print(response)
