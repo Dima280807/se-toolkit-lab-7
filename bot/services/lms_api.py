@@ -36,6 +36,13 @@ class LMSAPIClient:
         self.settings = settings or Settings()
         self.base_url = self.settings.lms_api_base_url.rstrip("/")
         self.api_key = self.settings.lms_api_key
+        
+        # Validate that API key is set
+        if not self.api_key:
+            raise ValueError(
+                "LMS_API_KEY is not set. "
+                "Make sure .env.bot.secret exists in the project root and contains LMS_API_KEY=your-key"
+            )
 
     def _get_headers(self) -> dict[str, str]:
         """Get headers for API requests with Bearer token."""

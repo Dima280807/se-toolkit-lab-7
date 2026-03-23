@@ -30,6 +30,8 @@ def handle_health() -> str:
         client = get_lms_client()
         health = client.get_health()
         return f"Backend status: healthy (items: {health['items_count']})"
+    except ValueError as e:
+        return f"Backend status: configuration error — {e}"
     except httpx.ConnectError as e:
         return f"Backend status: unhealthy — connection refused ({e})"
     except httpx.HTTPStatusError as e:
@@ -50,6 +52,8 @@ def handle_labs() -> str:
             return "No labs available."
         lab_list = "\n".join([f"- {lab['title']}" for lab in labs])
         return f"Available labs:\n{lab_list}"
+    except ValueError as e:
+        return f"Failed to fetch labs — configuration error: {e}"
     except httpx.ConnectError as e:
         return f"Failed to fetch labs — connection refused ({e})"
     except httpx.HTTPStatusError as e:
@@ -83,6 +87,8 @@ def handle_scores(lab: str | None = None) -> str:
             attempts = item.get("attempts", 0)
             score_lines.append(f"- {task_name}: {avg_score:.1f}% ({attempts} attempts)")
         return f"Scores for {lab}:\n" + "\n".join(score_lines)
+    except ValueError as e:
+        return f"Failed to fetch scores — configuration error: {e}"
     except httpx.ConnectError as e:
         return f"Failed to fetch scores — connection refused ({e})"
     except httpx.HTTPStatusError as e:
